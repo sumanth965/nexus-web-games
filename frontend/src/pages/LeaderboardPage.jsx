@@ -1,209 +1,194 @@
-import React from 'react';
-import { Trophy, Medal, Crown, Star } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Trophy, Medal, Crown, Star, ArrowUp, Zap, Ghost } from 'lucide-react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function LeaderboardPage({ leaderboard, currentUser }) {
     const sortedBoard = [...(leaderboard || [])].sort((a, b) => b.totalScore - a.totalScore);
-    const currentUserRank = sortedBoard.findIndex(entry => entry.id === currentUser?.id) + 1;
+    const container = useRef(null);
+
+    useGSAP(() => {
+        // Spotlight Entrance
+        gsap.from(".podium-card", {
+            y: 100,
+            opacity: 0,
+            duration: 1,
+            stagger: 0.2,
+            ease: "power4.out",
+            scrollTrigger: {
+                trigger: ".podium-card",
+                start: "top 90%",
+            }
+        });
+
+        // Independent Row Reveals
+        gsap.utils.toArray(".rank-row").forEach((row) => {
+            gsap.from(row, {
+                x: -40,
+                opacity: 0,
+                duration: 0.6,
+                ease: "power2.out",
+                scrollTrigger: {
+                    trigger: row,
+                    start: "top 95%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
+    }, { scope: container });
 
     const getRankIcon = (rank) => {
         switch (rank) {
-            case 1:
-                return <Crown className="w-6 h-6 text-cyan-400" />;
-            case 2:
-                return <Medal className="w-6 h-6 text-purple-400" />;
-            case 3:
-                return <Medal className="w-6 h-6 text-yellow-400" />;
-            default:
-                return <span className="text-lg font-bold text-gray-400">#{rank}</span>;
+            case 1: return <Crown className="w-8 h-8 text-cyan-400 drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]" />;
+            case 2: return <Medal className="w-7 h-7 text-purple-400" />;
+            case 3: return <Medal className="w-6 h-6 text-amber-500" />;
+            default: return <span className="text-xl font-black text-gray-600">#{rank}</span>;
         }
     };
 
-    const getRankColor = (rank) => {
-        switch (rank) {
-            case 1:
-                return 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30';
-            case 2:
-                return 'text-purple-400 bg-purple-500/10 border-purple-500/30';
-            case 3:
-                return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
-            default:
-                return 'text-gray-400 bg-gray-500/10 border-gray-500/30';
-        }
-    };
-
-    const getScoreColor = (rank) => {
-        switch (rank) {
-            case 1:
-                return 'text-cyan-400';
-            case 2:
-                return 'text-purple-400';
-            case 3:
-                return 'text-yellow-400';
-            default:
-                return 'text-white';
-        }
+    const getRowStyle = (rank, isCurrentUser) => {
+        if (isCurrentUser) return 'bg-cyan-500/10 border-cyan-500/40 shadow-[inset_0_0_20px_rgba(6,182,212,0.1)]';
+        if (rank === 1) return 'bg-gradient-to-r from-cyan-950/40 to-transparent border-cyan-500/20';
+        return 'bg-gray-900/40 border-gray-800 hover:border-gray-700';
     };
 
     return (
-        <div className="space-y-8 animate-fade-in">
-            {/* Header */}
-            <div className="text-center space-y-4 pb-6">
-                <div className="flex justify-center mb-6">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center animate-pulse">
-                        <Trophy className="w-10 h-10 text-white" />
-                    </div>
+        <div ref={container} className="space-y-12 max-w-5xl mx-auto px-4 pb-20">
+            {/* Legend Header */}
+            <div className="text-center space-y-6">
+                <div className="inline-flex items-center gap-3 px-6 py-2 bg-gray-900 border border-gray-800 rounded-full shadow-2xl">
+                    <Trophy className="w-5 h-5 text-yellow-500" />
+                    <span className="text-xs font-black uppercase tracking-[0.3em] text-gray-400">Competitive Arena</span>
                 </div>
-                <h1 className="text-4xl md:text-6xl font-bold">
-                    <span className="text-cyan-400">Global</span>{' '}
-                    <span className="text-white">Leaderboard</span>
+                <h1 className="text-5xl md:text-8xl font-black tracking-tighter text-white">
+                    HALL OF <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">FAME</span>
                 </h1>
-                <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-                    Compete with the best players worldwide
+                <p className="text-gray-400 text-lg font-medium max-w-xl mx-auto">
+                    The elite circle of Nexus players. Legends are made in milliseconds.
                 </p>
             </div>
 
-            {/* Current User Rank Card */}
-            {currentUserRank > 0 && currentUser && (
-                <div className={`border-2 ${getRankColor(currentUserRank)} rounded-2xl p-6 bg-gradient-to-r from-gray-900/30 to-gray-800/30 backdrop-blur`}>
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className={`w-14 h-14 rounded-full border-2 ${getRankColor(currentUserRank)} flex items-center justify-center`}>
-                                {getRankIcon(currentUserRank)}
+            {/* Top 3 Spotlight */}
+            {sortedBoard.length >= 1 && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end relative">
+                    <div className="hidden md:block absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent"></div>
+                    
+                    {/* SILVER - 2nd */}
+                    {sortedBoard[1] && (
+                        <div className="podium-card order-2 md:order-1 flex flex-col items-center space-y-4 pb-8 border-b-2 border-purple-500/20">
+                            <div className="relative group">
+                                <div className="w-24 h-24 rounded-3xl bg-gray-900 border-2 border-purple-500/50 flex items-center justify-center text-4xl shadow-2xl group-hover:scale-105 transition-transform">
+                                    🥈
+                                </div>
+                                <div className="absolute -top-3 -right-3 bg-purple-600 text-white text-[10px] font-black px-2 py-1 rounded-lg">#2</div>
                             </div>
-                            <div>
-                                <p className={`font-semibold text-lg ${getRankColor(currentUserRank).split(' ')[0]}`}>
-                                    Your Rank: #{currentUserRank}
-                                </p>
-                                <p className="text-white font-semibold">{currentUser?.username}</p>
-                                <p className="text-sm text-gray-400">Level {currentUser?.level || 1}</p>
+                            <div className="text-center">
+                                <h3 className="font-black text-xl text-white uppercase tracking-tight">{sortedBoard[1].username}</h3>
+                                <p className="text-purple-400 font-bold text-2xl mt-1">{sortedBoard[1].totalScore.toLocaleString()}</p>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <p className={`text-3xl font-bold ${getRankColor(currentUserRank).split(' ')[0]}`}>
-                                {currentUser?.totalScore?.toLocaleString() || 0}
-                            </p>
-                            <p className="text-sm text-gray-400">Total Score</p>
+                    )}
+
+                    {/* GOLD - 1st */}
+                    {sortedBoard[0] && (
+                        <div className="podium-card order-1 md:order-2 flex flex-col items-center space-y-6 pb-12 border-b-4 border-cyan-500 shadow-[0_20px_40px_-20px_rgba(6,182,212,0.4)] relative z-10 transition-transform hover:scale-105">
+                             <div className="absolute -top-20 animate-bounce">
+                                <Crown className="w-16 h-16 text-cyan-400 drop-shadow-[0_0_15px_rgba(6,182,212,0.8)]" />
+                             </div>
+                             <div className="w-32 h-32 rounded-[2.5rem] bg-gradient-to-br from-cyan-500 to-blue-600 p-1">
+                                <div className="w-full h-full bg-gray-900 rounded-[2.3rem] flex items-center justify-center text-6xl">
+                                    🥇
+                                </div>
+                             </div>
+                             <div className="text-center">
+                                <h3 className="font-black text-3xl text-cyan-400 uppercase tracking-tighter">{sortedBoard[0].username}</h3>
+                                <p className="text-white font-black text-4xl mt-1">{sortedBoard[0].totalScore.toLocaleString()}</p>
+                                <div className="mt-2 flex items-center justify-center gap-2">
+                                    <Star className="w-4 h-4 text-cyan-400 fill-cyan-400" />
+                                    <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Grand Champion</span>
+                                </div>
+                             </div>
                         </div>
-                    </div>
+                    )}
+
+                    {/* BRONZE - 3rd */}
+                    {sortedBoard[2] && (
+                        <div className="podium-card order-3 md:order-3 flex flex-col items-center space-y-4 pb-8 border-b-2 border-amber-500/20">
+                            <div className="relative group">
+                                <div className="w-20 h-20 rounded-3xl bg-gray-900 border-2 border-amber-500/50 flex items-center justify-center text-3xl shadow-2xl group-hover:scale-105 transition-transform">
+                                    🥉
+                                </div>
+                                <div className="absolute -top-3 -right-3 bg-amber-600 text-white text-[10px] font-black px-2 py-1 rounded-lg">#3</div>
+                            </div>
+                            <div className="text-center">
+                                <h3 className="font-black text-lg text-white uppercase tracking-tight">{sortedBoard[2].username}</h3>
+                                <p className="text-amber-500 font-bold text-xl mt-1">{sortedBoard[2].totalScore.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* Top 3 Podium */}
-            {sortedBoard.length >= 3 && (
-                <div className="grid md:grid-cols-3 gap-6">
-                    {/* 2nd Place */}
-                    <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-2 border-purple-500/30 rounded-2xl p-6 text-center space-y-4 md:mt-12 hover:border-purple-500/50 transition-all">
-                        <div className="flex justify-center">
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500/20 to-purple-500/10 border-2 border-purple-500/50 flex items-center justify-center">
-                                <Medal className="w-10 h-10 text-purple-400" />
-                            </div>
-                        </div>
-                        <div>
-                            <div className="inline-block bg-purple-500/20 text-purple-400 border border-purple-500/50 rounded-full px-3 py-1 text-sm font-semibold mb-2">
-                                2nd Place
-                            </div>
-                            <h3 className="text-xl font-bold text-white">{sortedBoard[1]?.username}</h3>
-                            <p className="text-sm text-gray-400">Level {sortedBoard[1]?.level || 1}</p>
-                        </div>
-                        <div>
-                            <p className="text-4xl font-bold text-purple-400">{sortedBoard[1]?.totalScore?.toLocaleString() || 0}</p>
-                            <p className="text-sm text-gray-400">Total Score</p>
-                        </div>
-                    </div>
-
-                    {/* 1st Place */}
-                    <div className="bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border-2 border-cyan-500/50 rounded-2xl p-6 text-center space-y-4 hover:border-cyan-500/70 transition-all -mt-6 md:-mt-0 md:scale-105">
-                        <div className="flex justify-center">
-                            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-500/20 to-cyan-500/10 border-2 border-cyan-500/50 flex items-center justify-center animate-bounce">
-                                <Crown className="w-12 h-12 text-cyan-400" />
-                            </div>
-                        </div>
-                        <div>
-                            <div className="inline-block bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 rounded-full px-3 py-1 text-sm font-semibold mb-2">
-                                Champion
-                            </div>
-                            <h3 className="text-2xl font-bold text-cyan-400">{sortedBoard[0]?.username}</h3>
-                            <p className="text-sm text-gray-400">Level {sortedBoard[0]?.level || 1}</p>
-                        </div>
-                        <div>
-                            <p className="text-5xl font-bold text-cyan-400">{sortedBoard[0]?.totalScore?.toLocaleString() || 0}</p>
-                            <p className="text-sm text-gray-400">Total Score</p>
-                        </div>
-                    </div>
-
-                    {/* 3rd Place */}
-                    <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 border-2 border-yellow-500/30 rounded-2xl p-6 text-center space-y-4 md:mt-12 hover:border-yellow-500/50 transition-all">
-                        <div className="flex justify-center">
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-500/20 to-yellow-500/10 border-2 border-yellow-500/50 flex items-center justify-center">
-                                <Medal className="w-10 h-10 text-yellow-400" />
-                            </div>
-                        </div>
-                        <div>
-                            <div className="inline-block bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 rounded-full px-3 py-1 text-sm font-semibold mb-2">
-                                3rd Place
-                            </div>
-                            <h3 className="text-xl font-bold text-white">{sortedBoard[2]?.username}</h3>
-                            <p className="text-sm text-gray-400">Level {sortedBoard[2]?.level || 1}</p>
-                        </div>
-                        <div>
-                            <p className="text-4xl font-bold text-yellow-400">{sortedBoard[2]?.totalScore?.toLocaleString() || 0}</p>
-                            <p className="text-sm text-gray-400">Total Score</p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Full Leaderboard */}
-            <div className="bg-gray-900/30 border border-gray-700/50 rounded-2xl p-6">
-                <div className="mb-6 pb-4 border-b border-gray-700/50">
-                    <h2 className="text-2xl font-bold text-white">All Rankings</h2>
-                    <p className="text-gray-400 text-sm">Top players from around the world</p>
+            {/* List View */}
+            <div className="glass-effect rounded-[3rem] p-4 md:p-8 space-y-4">
+                <div className="grid grid-cols-12 px-8 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                    <div className="col-span-2">Rank</div>
+                    <div className="col-span-6 md:col-span-7">Warrior</div>
+                    <div className="col-span-4 md:col-span-3 text-right">Combat Score</div>
                 </div>
 
-                <div className="space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar">
-                    {sortedBoard.map((entry, index) => {
-                        const rank = index + 1;
+                <div className="space-y-3">
+                    {sortedBoard.slice(0, 50).map((entry, i) => {
+                        const rank = i + 1;
                         const isCurrentUser = entry.id === currentUser?.id;
 
                         return (
-                            <div
+                            <div 
                                 key={entry.id}
-                                className={`flex items-center justify-between p-4 rounded-lg transition-all border ${
-                                    isCurrentUser
-                                        ? 'bg-cyan-500/10 border-cyan-500/50'
-                                        : 'bg-gray-800/30 hover:bg-gray-800/50 border-gray-700/30 hover:border-gray-600/50'
-                                }`}
+                                className={`rank-row grid grid-cols-12 items-center px-8 py-5 rounded-2xl border transition-all duration-300 ${getRowStyle(rank, isCurrentUser)}`}
                             >
-                                <div className="flex items-center gap-4 flex-1">
-                                    <div className="w-10 flex items-center justify-center">
-                                        {getRankIcon(rank)}
+                                <div className="col-span-2">
+                                    {getRankIcon(rank)}
+                                </div>
+                                <div className="col-span-6 md:col-span-7 flex items-center gap-4">
+                                    <div className="w-10 h-10 hidden sm:flex items-center justify-center bg-gray-800 rounded-xl text-xl">
+                                        {rank > 3 ? '👤' : (rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉')}
                                     </div>
-                                    <div className="flex-1">
+                                    <div>
                                         <div className="flex items-center gap-2">
-                                            <p className={`font-semibold ${
-                                                isCurrentUser ? 'text-cyan-400' : 'text-white'
-                                            }`}>
+                                            <p className={`font-black text-lg uppercase tracking-tight ${isCurrentUser ? 'text-cyan-400' : 'text-white'}`}>
                                                 {entry.username}
                                             </p>
                                             {isCurrentUser && (
-                                                <span className="bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 rounded-full px-2 py-0.5 text-xs font-semibold">
-                                                    You
-                                                </span>
+                                                <div className="px-2 py-0.5 bg-cyan-500 text-black text-[8px] font-black rounded uppercase">You</div>
                                             )}
                                         </div>
-                                        <p className="text-sm text-gray-400">Level {entry.level || 1}</p>
+                                        <div className="flex items-center gap-2">
+                                            <Zap className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">LVL {entry.level || 1}</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className={`text-xl font-bold ${getScoreColor(rank)}`}>
-                                        {entry.totalScore?.toLocaleString() || 0}
+                                <div className="col-span-4 md:col-span-3 text-right">
+                                    <p className={`text-2xl font-black ${rank <= 3 ? (rank === 1 ? 'text-cyan-400' : rank === 2 ? 'text-purple-400' : 'text-amber-500') : 'text-gray-300'}`}>
+                                        {entry.totalScore.toLocaleString()}
                                     </p>
-                                    <p className="text-xs text-gray-400">points</p>
+                                    <div className="flex items-center justify-end gap-1 text-[8px] font-black text-gray-600 uppercase tracking-widest">
+                                        <ArrowUp className="w-2 h-2 text-green-500" /> +{Math.floor((entry.totalScore % 50) + 10)} PTS
+                                    </div>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
+                
+                {sortedBoard.length === 0 && (
+                    <div className="py-20 text-center space-y-4">
+                         <Ghost className="w-16 h-16 text-gray-800 mx-auto" />
+                         <p className="text-gray-600 font-black uppercase tracking-widest">No legends registered yet.</p>
+                    </div>
+                )}
             </div>
         </div>
     );
